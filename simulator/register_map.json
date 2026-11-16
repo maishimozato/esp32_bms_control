@@ -1,0 +1,139 @@
+{
+  "version": "narada-example-v1",
+  "source": "NESP_IOM.R0.1_092019.pdf, section 6.2, printed pages 18-20",
+  "notice": "EXAMPLE MAP, not validated for lab equipment. FC03, zero-based addressing and unit 1 are simulator conventions pending device validation. All writes rejected. Alarm bit identities unknown; injected 1 means a synthetic nonzero alarm word, not verified cell-overvoltage bit.",
+  "registers": [
+    {
+      "address": "0x1044",
+      "name": "system_charge_state",
+      "scale": 1,
+      "unit": "enum",
+      "signed": false
+    },
+    {
+      "address": "0x1045",
+      "name": "system_current",
+      "scale": 0.1,
+      "unit": "A",
+      "signed": true
+    },
+    {
+      "address": "0x1047",
+      "name": "system_soc",
+      "scale": 1,
+      "unit": "%",
+      "signed": false
+    },
+    {
+      "address": "0x1048",
+      "name": "system_run_state",
+      "scale": 1,
+      "unit": "enum",
+      "signed": false
+    },
+    {
+      "address": "0x1049",
+      "name": "system_voltage",
+      "scale": 0.1,
+      "unit": "V",
+      "signed": false
+    },
+    {
+      "address": "0x2100",
+      "name": "rack1_voltage",
+      "scale": 0.1,
+      "unit": "V",
+      "signed": false
+    },
+    {
+      "address": "0x2101",
+      "name": "rack1_current",
+      "scale": 0.1,
+      "unit": "A",
+      "signed": true
+    },
+    {
+      "address": "0x2103",
+      "name": "rack1_soc",
+      "scale": 1,
+      "unit": "%",
+      "signed": false
+    },
+    {
+      "address": "0x2106",
+      "name": "rack1_max_cell_voltage",
+      "scale": 1,
+      "unit": "mV",
+      "signed": false
+    },
+    {
+      "address": "0x2108",
+      "name": "rack1_min_cell_voltage",
+      "scale": 1,
+      "unit": "mV",
+      "signed": false
+    },
+    {
+      "address": "0x210A",
+      "name": "rack1_max_temperature",
+      "scale": 0.1,
+      "unit": "C",
+      "signed": true
+    },
+    {
+      "address": "0x210C",
+      "name": "rack1_min_temperature",
+      "scale": 0.1,
+      "unit": "C",
+      "signed": true
+    },
+    {
+      "address": "0x21A2",
+      "name": "rack1_alarm_level1",
+      "scale": 1,
+      "unit": "raw word",
+      "signed": false
+    },
+    {
+      "address": "0x21A3",
+      "name": "rack1_alarm_level2",
+      "scale": 1,
+      "unit": "raw word",
+      "signed": false
+    },
+    {
+      "address": "0x21A4",
+      "name": "rack1_alarm_level3",
+      "scale": 1,
+      "unit": "raw word",
+      "signed": false
+    },
+    {
+      "address": "0x21A5",
+      "name": "rack1_other_fault",
+      "scale": 1,
+      "unit": "raw word",
+      "signed": false
+    }
+  ],
+  "arrays": [
+    {
+      "name": "rack1_cell_voltages",
+      "start": "0x2800",
+      "maximum_count": 256,
+      "scale": 1,
+      "unit": "mV",
+      "signed": false
+    },
+    {
+      "name": "rack1_cell_temperatures",
+      "start": "0x2C00",
+      "maximum_count": 256,
+      "scale": 0.1,
+      "unit": "C",
+      "signed": true
+    }
+  ],
+  "synthetic_default_channels": 160,
+  "channel_mapping": "Not verified. Default assumes 10 modules x 16 series measurement channels solely to create fixtures. Temperature channel count and module ordering have not been established."
+}
