@@ -1,6 +1,6 @@
 #include <ETH.h>
-#include <Ethernet.h>
-#include <ArduinoModbus.h>
+#include <NetworkClient.h>
+#include <ModbusTCPClient.h>
 
 // Olimex ESP32-POE-ISO typical PHY pins
 #define ETH_ADDR        0
@@ -18,6 +18,9 @@ IPAddress bamsIp(192, 168, 1, 199);
 const uint16_t BAMS_PORT = 502;
 const uint8_t UNIT_ID = 1;
 
+NetworkClient modbusNetworkClient;
+ModbusTCPClient modbusClient(modbusNetworkClient);
+
 void setup() {
   Serial.begin(115200);
 
@@ -31,25 +34,25 @@ void setup() {
   Serial.print("ESP32 IP: ");
   Serial.println(ETH.localIP());
 
-  if (!ModbusTCPClient.begin(bamsIp, BAMS_PORT)) {
+  if (!modbusClient.begin(bamsIp, BAMS_PORT)) {
     Serial.println("Modbus TCP connection failed");
   }
 }
 
 void loop() {
-  if (!ModbusTCPClient.connected()) {
-    ModbusTCPClient.begin(bamsIp, BAMS_PORT);
+  if (!modbusClient.connected()) {
+    modbusClient.begin(bamsIp, BAMS_PORT);
   }
 
   // Read 10 holding registers starting at 0x1044 (4164 decimal)
-  if (ModbusTCPClient.requestFrom(UNIT_ID, HOLDING_REGISTERS, 0x1044, 10)) {
-    while (ModbusTCPClient.available()) {
-      uint16_t value = ModbusTCPClient.read();
+  if (modbusClient.requestFrom(UNIT_ID, HOLDING_REGISTERS, 0x1044, 10)) {
+    while (modbusClient.available()) {
+      uint16_t value = modbusClient.read();
       Serial.println(value, HEX);
     }
   } else {
     Serial.print("Modbus error: ");
-    Serial.println(ModbusTCPClient.lastError());
+    Serial.println(modbusClient.lastError());
   }
 
   delay(1000);
