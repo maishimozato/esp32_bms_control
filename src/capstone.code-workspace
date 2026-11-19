@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "capstone",
+			"path": ".."
+		},
+		{
+			"name": "capstone",
+			"path": "../../Documents/PlatformIO/Projects/capstone"
+		}
+	],
+	"settings": {}
+}
