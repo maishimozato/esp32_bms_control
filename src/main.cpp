@@ -235,69 +235,94 @@ void loop() {
     Serial.println("TCP connection established");
   }
 
-  // Prefer the exact settings that worked in your other Modbus tool.
-  const uint16_t registerAddress = 0x1044;
+  // Read 12 registers: 0x1044 through 0x104F.
+  const uint16_t startAddress = 0x1044;
+  const int registerCount = 12;
 
-  Serial.print("Reading holding register 0x");
-  Serial.print(registerAddress, HEX);
-  Serial.print(", unit ID ");
-  Serial.println(UNIT_ID);
+  int count = modbusClient.requestFrom(UNIT_ID, HOLDING_REGISTERS, startAddress,
+                                       registerCount);
 
-  int count =
-      modbusClient.requestFrom(UNIT_ID, HOLDING_REGISTERS, registerAddress, 1);
-
-  if (count == 1 && modbusClient.available()) {
-    int value = modbusClient.read();
-
-    Serial.print("Value: ");
-    Serial.print(value);
-    Serial.print(" (0x");
-    Serial.print(value, HEX);
-    Serial.println(")");
-  } else {
-    Serial.print("Modbus read failed: ");
+  if (count != registerCount || modbusClient.available() < registerCount) {
+    Serial.print("Modbus block read failed: ");
     Serial.println(modbusClient.lastError());
     modbusClient.stop();
     modbusNetworkClient.stop();
+    delay(3000);
+    return;
   }
 
+  uint16_t registers[registerCount];
+
+  for (int i = 0; i < registerCount; i++) {
+    registers[i] = static_cast<uint16_t>(modbusClient.read());
+  }
+
+  // Decode using the manual's example register map.
+  uint16_t chargeState = registers[0];  // 0x1044
+  int32_t currentRaw = registers[1];    // 0x1045
+  // registers[2] is reserved                // 0x1046
+  uint16_t soc = registers[3];              // 0x1047
+  uint16_t runState = registers[4];         // 0x1048
+  uint16_t voltageRaw = registers[5];       // 0x1049
+  uint16_t insulationRaw = registers[6];    // 0x104A
+  uint16_t chargeEnergy = registers[7];     // 0x104B
+  uint16_t dischargeEnergy = registers[8];  // 0x104C
+  // registers[9] is reserved                // 0x104D
+  uint16_t chargeLimitRaw = registers[10];     // 0x104E
+  uint16_t dischargeLimitRaw = registers[11];  // 0x104F
+
+  // Convert current from signed 16-bit two's complement.
+  if (currentRaw >= 32768) {
+    currentRaw -= 65536;
+  }
+
+  Serial.println();
+  Serial.println("---------- BAMS STATUS ----------");
+
+  Serial.print("Charge state: ");
+  Serial.println(chargeState);
+
+  Serial.print("System current: ");
+  Serial.print(currentRaw * 0.1f, 1);
+  Serial.println(" A");
+
+  Serial.print("System SOC raw (unvalidated): ");
+  Serial.println(soc);
+
+  Serial.print("Run state: ");
+  Serial.println(runState);
+
+  Serial.print("System voltage: ");
+  Serial.print(voltageRaw * 0.1f, 1);
+  Serial.println(" V");
+
+  Serial.print("Insulation resistance (raw): ");
+  Serial.println(insulationRaw);
+
+  Serial.print("Charge energy: ");
+  Serial.print(chargeEnergy);
+  Serial.println(" kWh");
+
+  Serial.print("Discharge energy: ");
+  Serial.print(dischargeEnergy);
+  Serial.println(" kWh");
+
+  Serial.print("Charge current limit: ");
+  Serial.print(chargeLimitRaw * 0.1f, 1);
+  Serial.println(" A");
+
+  Serial.print("Discharge current limit: ");
+  Serial.print(dischargeLimitRaw * 0.1f, 1);
+  Serial.println(" A");
+
+  Serial.println("Raw registers:");
+  for (int i = 0; i < registerCount; i++) {
+    Serial.printf("  0x%04X = %u (0x%04X)\n",
+                  static_cast<unsigned int>(startAddress + i),
+                  static_cast<unsigned int>(registers[i]),
+                  static_cast<unsigned int>(registers[i]));
+  }
+
+  Serial.println("---------------------------------");
   delay(3000);
 }
-
-// Read 10 holding registers: 0x1044 through 0x104D
-//   if (modbusClient.requestFrom(UNIT_ID, 0x03, 0x1044, 10)) {
-//     uint16_t chargeState = modbusClient.read();
-//     int16_t currentRaw = modbusClient.read();
-//     uint16_t soc = modbusClient.read();
-//     uint16_t runState = modbusClient.read();
-//     uint16_t voltageRaw = modbusClient.read();
-//     uint16_t insulation = modbusClient.read();
-//     uint16_t chargeEnergy = modbusClient.read();
-//     uint16_t dischargeEnergy = modbusClient.read();
-//     uint16_t reserved = modbusClient.read();
-//     uint16_t chargeLimit = modbusClient.read();
-
-//     float currentA = currentRaw * 0.1f;
-//     float systemV = voltageRaw * 0.1f;
-
-//     Serial.println("---------- BAMS STATUS ----------");
-//     Serial.print("Charge state: ");
-//     Serial.println(chargeState);
-//     Serial.print("System current: ");
-//     Serial.print(currentA, 1);
-//     Serial.println(" A");
-//     Serial.print("System SOC: ");
-//     Serial.print(soc);
-//     Serial.println(" %");
-//     Serial.print("Run state: ");
-//     Serial.println(runState);
-//     Serial.print("System voltage: ");
-//     Serial.print(systemV, 1);
-//     Serial.println(" V");
-//     Serial.println("---------------------------------");
-//   } else {
-//     Serial.print("Modbus read failed: ");
-//     Serial.println(modbusClient.lastError());
-//   }
-
-//   delay(2000);
