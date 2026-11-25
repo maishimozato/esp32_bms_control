@@ -9,11 +9,12 @@ constexpr uint32_t PWM_TIMER_RESOLUTION_HZ = 10000000;
 constexpr uint32_t PWM_PERIOD_TICKS =
     PWM_TIMER_RESOLUTION_HZ / PWM_FREQUENCY_HZ;
 
-// TBD
-constexpr uint32_t PWM_DEAD_TIME_NS = 0;
-constexpr float PWM_DUTY_PERCENT = 0.0f;
-constexpr bool PWM_OUTPUTS_VERIFIED = false;
+constexpr uint32_t PWM_DEAD_TIME_NS = 1000;
+constexpr float PWM_DUTY_PERCENT = 50.0f;
+constexpr bool PWM_OUTPUTS_VERIFIED = true;
 
+mcpwm_cmpr_handle_t comparator = nullptr;
+bool pwmRunning = false;
 void setupConverterPwm() {
   pinMode(PWM_HIGH_GPIO, OUTPUT);
   digitalWrite(PWM_HIGH_GPIO, LOW);
@@ -61,7 +62,6 @@ void setupConverterPwm() {
 
   mcpwm_comparator_config_t comparatorConfig = {};
   comparatorConfig.flags.update_cmp_on_tez = true;
-  mcpwm_cmpr_handle_t comparator = nullptr;
   error = mcpwm_new_comparator(oper, &comparatorConfig, &comparator);
   if (error != ESP_OK) {
     Serial.print("MCPWM comparator creation failed: ");
@@ -69,8 +69,9 @@ void setupConverterPwm() {
     return;
   }
 
-  const uint32_t compareTicks = static_cast<uint32_t>(
-      PWM_PERIOD_TICKS * PWM_DUTY_PERCENT / 100.0f);
+  // setting the duty cycle
+  const uint32_t compareTicks =
+      static_cast<uint32_t>(PWM_PERIOD_TICKS * PWM_DUTY_PERCENT / 100.0f);
   error = mcpwm_comparator_set_compare_value(comparator, compareTicks);
   if (error != ESP_OK) {
     Serial.print("MCPWM duty setup failed: ");
@@ -99,10 +100,9 @@ void setupConverterPwm() {
   }
 
   error = mcpwm_generator_set_action_on_timer_event(
-      highGenerator,
-      MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP,
-                                  MCPWM_TIMER_EVENT_EMPTY,
-                                  MCPWM_GEN_ACTION_HIGH));
+      highGenerator, MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP,
+                                                  MCPWM_TIMER_EVENT_EMPTY,
+                                                  MCPWM_GEN_ACTION_HIGH));
   if (error == ESP_OK) {
     error = mcpwm_generator_set_action_on_compare_event(
         highGenerator,
@@ -116,8 +116,7 @@ void setupConverterPwm() {
   }
 
   const uint32_t deadTimeTicks = static_cast<uint32_t>(
-      (static_cast<uint64_t>(PWM_DEAD_TIME_NS) *
-           PWM_TIMER_RESOLUTION_HZ +
+      (static_cast<uint64_t>(PWM_DEAD_TIME_NS) * PWM_TIMER_RESOLUTION_HZ +
        999999999ULL) /
       1000000000ULL);
   mcpwm_dead_time_config_t deadTimeConfig = {};
@@ -151,7 +150,36 @@ void setupConverterPwm() {
     return;
   }
 
+  pwmRunning = true;
+
   Serial.println("Complementary converter PWM started at 20 kHz");
+}
+
+bool setDemoDuty(float percent) {
+  if (!pwmRunning || comparator == nullptr) {
+    Serial.println("PWM is not running");
+    return false;
+  }
+
+  if (percent < 20.0f || percent > 80.0f) {
+    Serial.println("Demo duty must be between 20% and 80%");
+    return false;
+  }
+
+  const uint32_t compareTicks =
+      static_cast<uint32_t>(PWM_PERIOD_TICKS * percent / 100.0f);
+
+  const esp_err_t error =
+      mcpwm_comparator_set_compare_value(comparator, compareTicks);
+
+  if (error != ESP_OK) {
+    Serial.print("Duty update failed: ");
+    Serial.println(esp_err_to_name(error));
+    return false;
+  }
+
+  Serial.printf("Nominal high-side duty = %.1f%%\n", percent);
+  return true;
 }
 
 void setup() {
@@ -160,4 +188,40 @@ void setup() {
   setupConverterPwm();
 }
 
-void loop() {}
+void loop() {
+  if (Serial.available()) {
+    const char command = Serial.read();
+
+    switch (command) {
+      case 'u':
+      case 'U':
+        setDemoDuty(25.0f);
+        Serial.println("Target: approximately TOP 7.5 V / BOTTOM 2.5 V");
+        break;
+
+      case 'b':
+      case 'B':
+        setDemoDuty(50.0f);
+        Serial.println("Target: approximately TOP 5 V / BOTTOM 5 V");
+        break;
+
+      case 'l':
+      case 'L':
+        setDemoDuty(75.0f);
+        Serial.println("Target: approximately TOP 2.5 V / BOTTOM 7.5 V");
+        break;
+
+      case '?':
+        Serial.println("u: upper capacitor higher");
+        Serial.println("b: equal split");
+        Serial.println("l: lower capacitor higher");
+        Serial.println("No software STOP is implemented in this patch.");
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  delay(1);
+}
