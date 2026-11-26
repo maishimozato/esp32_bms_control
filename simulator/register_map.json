@@ -1,7 +1,7 @@
 {
   "version": "narada-example-v1",
   "source": "NESP_IOM.R0.1_092019.pdf, section 6.2, printed pages 18-20",
-  "notice": "EXAMPLE MAP, not validated for lab equipment. FC03, zero-based addressing and unit 1 are simulator conventions pending device validation. All writes rejected. Alarm bit identities unknown; injected 1 means a synthetic nonzero alarm word, not verified cell-overvoltage bit.",
+  "notice": "Map ot validated for lab equipment. FC03, zero-based addressing and unit 1 are simulator conventions pending device validation. All writes rejected. Alarm bit identities unknown; injected 1 means a synthetic nonzero alarm word, not verified cell-overvoltage bit.",
   "registers": [
     {
       "address": "0x1044",
@@ -135,5 +135,5 @@
     }
   ],
   "synthetic_default_channels": 160,
-  "channel_mapping": "Not verified. Default assumes 10 modules x 16 series measurement channels solely to create fixtures. Temperature channel count and module ordering have not been established."
+  "channel_mapping": "Synthetic only: 10 modules x 16 voltage channels; Set 1 upper 0-47, lower 48-95; Set 2 upper 96-127, lower 128-159. Actual ordering not verified."
 }
